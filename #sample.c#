@@ -22,6 +22,8 @@ int main (int argc, char *argv[])
 	int i=0;
 	int countDashArg = 0;
 	
+	/*
+	
 	if (argc != 13)
 	{
 		printf("Not enough arguments\n");
@@ -68,44 +70,11 @@ int main (int argc, char *argv[])
 		exit(0);
 	}
 	
+	*/ 
+
 	printf("--app %s --impl %s --maps %d --reduces %d --input %s --output %s\n", 
 		app, impl, numMaps, numReduce, inFile, outFile);
-    	
-    char *wordcount = "wordcount"; 	
-    char *sort = "sort"; 
-    
-    char *procs = "procs"; 
-    char *threads = "threads";     
-    	
-    if(strcmp(app,wordcount) ==0){
-        printf("app is wordcount "); 
-        
-        if(strcmp(impl,procs) ==0){
-            printf("do wordcount with processes\n");         
-        }
-        
-        else if(strcmp(impl,threads) ==0){
-            printf("do wordcount with threads\n");         
-        }   
-    }	 
-    
-    else if(strcmp(app,sort) ==0){
-        printf("app is sort ");
-        
-        if(strcmp(impl,procs) ==0){
-            printf("do integer sort with processes\n");
-        }
-        
-        else if(strcmp(impl,threads) ==0){
-            printf("do integer sort with threads\n");        
-        }    
-    }
-    
-    else{
-        printf("ERROR: incorrect input, please enter either wordcount or sort for --app");    
-    }
-            
-            
+	
 	//reading from input file character by character and writing to output file
     int c;
 
@@ -140,26 +109,29 @@ int main (int argc, char *argv[])
            wordsArray[wordsArrayIndex] = malloc(sizeof(sentence)); 
            wordsArray[wordsArrayIndex] = strdup(sentence);        
            
-           //printf("%s ", sentence); 
+           printf("%s ", sentence); 
            sentence = strtok(NULL, " "); 
                 
            ++wordsArrayIndex;         
-            
+           
             
         }                       
     }
     
-    /*   
     int x;        
-
-    printf("\n\nprinting from array\n");  
+    
+    printf("\n\nprinting from array\n"); 
+    
+    /*printf("%s\n", wordsArray[0]); 
+    printf("%s\n", wordsArray[1]); 
+    printf("%s\n", wordsArray[2]); 
+    */ 
     
     for(x=0; x<wordsArrayIndex; x++){
     
         printf("%s ", wordsArray[x]);        
             
     }
-    */
     
     
     //1) now add word to an index of wordsArray and malloc for each index to the size of sentence 
@@ -172,8 +144,7 @@ int main (int argc, char *argv[])
         
    	return 0; 
 	
-	
-    /*	
+	/*
 	FILE *fileW = fopen(outFile, "w");
 		if (fileW == NULL)
 		{

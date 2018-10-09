@@ -1,0 +1,1 @@
+Sample simply checks all the arguments, exits if argc<13, or if the important argument such as --app is less than 6. It also reads a file, and prints exactly toa given output file.
