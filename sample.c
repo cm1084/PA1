@@ -91,15 +91,21 @@ int main (int argc, char *argv[])
     char *procs = "procs"; 
     char *threads = "threads";     
                     
-    int c;
+    
 
 	FILE *fileR;
 	//fileR = fopen(inFile, "r");	
     fileR = fopen(inFile,"r");     
-    
+
+    if(strcmp(app,wordcount) ==0){
+        //printf("app is wordcount "); 
+        
+        if(strcmp(impl,procs) ==0){
+            //printf("do wordcount with processes\n");
+	    
     //char token[1024];
-    
-    int bigArrSize = 4000;        
+    int c;
+    int bigArrSize = 100000;        
     char **bigArr = (char**)malloc(bigArrSize*sizeof(char**));     
     
     char line[10000]; 
@@ -198,16 +204,10 @@ int main (int argc, char *argv[])
     //means the number of words is not equally divided among the maps     
     if(multiply != numOfWords){
         numOfWordsInLastMap = numOfWords%numOfMaps; 
-    }
-    
-    	
-    if(strcmp(app,wordcount) ==0){
-        //printf("app is wordcount "); 
-        
-        if(strcmp(impl,procs) ==0){
-            //printf("do wordcount with processes\n");    
-            processesMap(numOfWords, numOfMaps, numOfWordsPerMap, numOfWordsInLastMap, bigArr, numReduce);      
-        }
+    }    
+            processesMap(numOfWords, numOfMaps, numOfWordsPerMap, numOfWordsInLastMap, bigArr, numReduce, outFile);
+		
+        } // do wordcount with processes ends
         
         else if(strcmp(impl,threads) ==0){
             //printf("do wordcount with threads\n");         
@@ -222,8 +222,130 @@ int main (int argc, char *argv[])
         }
         
         else if(strcmp(impl,threads) ==0){
-            //printf("do integer sort with threads\n");        
-        }    
+            //printf("do integer sort with threads\n");  
+
+
+	int bigArrIntSize=10000000;
+	int *bigArrInt=(int*)malloc(bigArrIntSize*sizeof(int));
+	
+
+	FILE* file = fopen (inFile, "r");
+  	int i = 0;
+
+  	fscanf (file, "%d", &i);
+	//printf ("%d ", i);
+	int index=0;
+	   
+  	while (!feof (file))
+   	 {  
+         // printf ("%d ", i);
+	  bigArrInt[index]=i;
+	  index++;
+	  if (index>=bigArrIntSize-1)
+	  {
+		 bigArrIntSize = bigArrIntSize*2;
+		 bigArrInt = (int*)realloc(bigArrInt, bigArrIntSize * sizeof(int));
+	  }
+    	  fscanf (file, "%d", &i);   
+    	}
+  	fclose (file); 
+	
+	
+	
+
+	 int numOfInts = index;
+    	 int numOfMaps = numMaps;
+   	
+	 int numOfIntsPerMap=0;
+	 int numOfIntsInLastMap=0;
+	
+   	 if (numOfInts%numOfMaps == 0)
+	 {
+		numOfIntsPerMap = numOfInts/numOfMaps;
+	  }
+	 else
+	 {
+		numOfIntsPerMap = numOfInts/numOfMaps;
+		numOfIntsInLastMap = (numOfInts/numOfMaps)+(numOfInts%numOfMaps);
+	 }
+   
+    
+   	 printf("\nNumber of maps: %d", numOfMaps);
+    	printf("\nNumber of words per map: %d", numOfIntsPerMap);
+    	printf("\nNumber of words in last map: %d\n", numOfIntsInLastMap);
+    
+
+        // assume number of maps is 4
+	struct map_struct mapper[numMaps];
+	// Thread ID:
+	pthread_t tids[numMaps];
+
+	int start=0;
+	int end=numOfIntsPerMap;
+	int j=0;
+	for (i = 0; i < numMaps; i++) {
+		mapper[i].given=(int*)malloc(50*sizeof(int));
+		if (i==numMaps-1)
+		{
+			if (numOfIntsInLastMap != 0)
+				end=numOfIntsInLastMap;
+				
+		}
+		mapper[i].size = end;
+		printf("%d\n", mapper[i].size);
+		for (j=0; j<end; j++)
+		{
+			mapper[i].given[j] = bigArrInt[start];
+			start++;
+			//printf("%d\n", mapper[i].given[j]);
+		}
+
+		pthread_attr_t attr;
+		pthread_attr_init(&attr);
+		pthread_create(&tids[i], &attr, map_runner, &mapper[i]);
+	}
+
+	// Wait until thread is done its work
+	for (i = 0; i < numMaps; i++) {
+		pthread_join(tids[i], NULL);	
+	}
+
+	/*---- map phase ends here */
+
+	// Shuffle Phase, where the sorting is done, 
+	printf("After map returns\n");
+
+	FILE *fileW = fopen(outFile, "w");
+		if (fileW == NULL)
+		{
+ 		   printf("Error opening file!\n");
+ 		   exit(1);
+		}
+
+	int *resultArr=(int*)malloc(index*sizeof(int));
+	int arr=0;
+	for (i = 0; i < numMaps; i++) {
+
+		for (j=0; j<mapper[i].size; j++)
+		{
+			resultArr[arr] = mapper[i].result[j];
+			arr++;
+		}	
+	}
+
+       
+	printf("\n");
+
+	mergeSortInt(resultArr, 0, arr-1);
+
+	for (i=0; i<arr; i++)
+	{
+		fprintf(fileW, "%d\n", resultArr[i]);
+	}
+
+
+		      
+        }  //   else if(strcmp(impl,threads) ==0) ends
     }
     
     else{
@@ -234,7 +356,7 @@ int main (int argc, char *argv[])
 	
 }
 
-void processesMap(int numOfWords, int numOfMaps, int numOfWordsPerMap, int numOfWordsInLastMap, char **bigArr, int numOfReduce){
+void processesMap(int numOfWords, int numOfMaps, int numOfWordsPerMap, int numOfWordsInLastMap, char **bigArr, int numOfReduce, char *outFile){
 
     printf("\nin Maps function\n"); 
     
@@ -326,13 +448,13 @@ void processesMap(int numOfWords, int numOfMaps, int numOfWordsPerMap, int numOf
         }
     }
     
-    processesShuffle(numOfWords, numOfReduce);     
+    processesShuffle(numOfWords, numOfReduce, outFile);     
    
     return;    
     
 }
 
-void processesShuffle(int numOfWords, int numOfReduce){
+void processesShuffle(int numOfWords, int numOfReduce, char* outFile){
      
     printf("\nEntered shuffle\n");     
     
@@ -408,23 +530,16 @@ void processesShuffle(int numOfWords, int numOfReduce){
     int sizeWords=(indexOfArr/2)+1;
         
     mergeSort(bigArray, 0, indexOfArr-1, sizeWords);
-    
-    FILE *fileW = fopen("output.txt", "w");
-    if (fileW == NULL)
-    {
-	   printf("Error opening file!\n");
-	   exit(1);
-	}        
+          
    
-    x=0;  
+    x=0;
     //printf("\nPrinting out of bigArray\n"); 
     /*for(x; x<indexOfArr; x++){
         //printf("%s\n", bigArray[x]);  
-        fprintf(fileW, "%s\n", bigArray[x]);   
-    
+        fprintf(fileW, "%s\n", bigArray[x]);
     }*/
     
-    reduce(bigArray, numOfWords, numOfReduce); 
+    reduce(bigArray, numOfWords, numOfReduce, outFile); 
       
   
     /* remove the shared memory object */
@@ -432,14 +547,14 @@ void processesShuffle(int numOfWords, int numOfReduce){
 
 }
 
-void reduce(char **bigArray, int numOfWords, int numOfReduce){
+void reduce(char **bigArray, int numOfWords, int numOfReduce, char* outFile){
     
   struct dataItem *hashArray[numOfWords];  
   
     int x=0;  
     int indexOfArr = numOfWords;
     
-    FILE *fileW = fopen("output.txt", "w");
+    FILE *fileW = fopen(outFile, "w");
     if (fileW == NULL)
     {
 	   printf("Error opening file!\n");
@@ -558,6 +673,104 @@ void mergeSort(char** input, int l, int r, int size)
  
         merge(input, l, m, r, size);
     }
+}
+
+void mergeInt(int arr[], int l, int m, int r) 
+{ 
+    int i, j, k; 
+    int n1 = m - l + 1; 
+    int n2 =  r - m; 
+  
+    int L[n1], R[n2]; 
+  
+    for (i = 0; i < n1; i++) 
+        L[i] = arr[l + i]; 
+    for (j = 0; j < n2; j++) 
+        R[j] = arr[m + 1+ j]; 
+
+    i = 0; 
+    j = 0; 
+    k = l; 
+    while (i < n1 && j < n2) 
+    { 
+        if (L[i] <= R[j]) 
+        { 
+            arr[k] = L[i]; 
+            i++; 
+        } 
+        else
+        { 
+            arr[k] = R[j]; 
+            j++; 
+        } 
+        k++; 
+    } 
+  
+
+    while (i < n1) 
+    { 
+        arr[k] = L[i]; 
+        i++; 
+        k++; 
+    } 
+
+    while (j < n2) 
+    { 
+        arr[k] = R[j]; 
+        j++; 
+        k++; 
+    } 
+} 
+  
+void mergeSortInt(int arr[], int l, int r) 
+{ 
+    if (l < r) 
+    { 
+
+        int m = l+(r-l)/2; 
+        mergeSortInt(arr, l, m); 
+        mergeSortInt(arr, m+1, r); 
+  
+        mergeInt(arr, l, m, r); 
+    } 
+} 
+
+struct map_struct {
+	int *given;
+	int *result;
+	int size;
+};
+
+
+// Thread function to generate sum of 0 to N
+void* map_runner(void* arg)
+{
+	struct map_struct *arg_struct =
+			(struct map_struct*) arg;
+	
+	arg_struct->result=(int*)malloc(50*sizeof(int));
+  	int i = 0;
+  	for( i = 0; i < arg_struct->size; i++){
+		arg_struct->result[i] = arg_struct->given[i];
+  	}
+	
+  	mergeSortInt(arg_struct->result, 0, arg_struct->size-1);
+
+	pthread_exit(0);
+}
+
+void* reduce_runner(void* arg)
+{
+	struct map_struct *arg_struct =
+			(struct map_struct*) arg;
+	
+	arg_struct->result=(int*)malloc(50*sizeof(int));
+  	int i = 0;
+  	for( i = 0; i < arg_struct->size; i++){
+		arg_struct->result[i] = arg_struct->given[i];
+  	}
+
+	pthread_exit(0);
 }
 
 
