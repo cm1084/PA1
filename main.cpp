@@ -17,7 +17,7 @@ typedef struct array_node{
 
 
 FILE *fp;
-linkP L = (linkP)malloc(sizeof(struct node));
+linkP L;
 linkP deal(char temp[],char line[]);
 linkP search(char temp[],linkP L);
 void PrintList(linkP L);
@@ -26,6 +26,7 @@ linkP sort(linkP L);
 void copy(arr array,linkP L);//This funciton copy the sorted word to an array
 
 int main(void){
+    L= (linkP)malloc(sizeof(struct node));
     fp = fopen("test.txt","r");
     L->next = NULL;
     char line[MAXSIZE];
