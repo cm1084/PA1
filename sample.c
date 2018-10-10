@@ -8,6 +8,20 @@
 #include <sys/stat.h> 
 #include <sys/types.h>
 
+struct dataItem {
+	char *key;
+	int  value;
+
+};
+
+
+struct hashtableS {
+	int size;
+	struct entry **table;	
+};
+
+typedef struct hashtable_s hashtable_t;
+
 
 int main (int argc, char *argv[])
 {
@@ -76,36 +90,7 @@ int main (int argc, char *argv[])
     
     char *procs = "procs"; 
     char *threads = "threads";     
-    	
-    if(strcmp(app,wordcount) ==0){
-        printf("app is wordcount "); 
-        
-        if(strcmp(impl,procs) ==0){
-            printf("do wordcount with processes\n");         
-        }
-        
-        else if(strcmp(impl,threads) ==0){
-            printf("do wordcount with threads\n");         
-        }   
-    }	 
-    
-    else if(strcmp(app,sort) ==0){
-        printf("app is sort ");
-        
-        if(strcmp(impl,procs) ==0){
-            printf("do integer sort with processes\n");
-        }
-        
-        else if(strcmp(impl,threads) ==0){
-            printf("do integer sort with threads\n");        
-        }    
-    }
-    
-    else{
-        printf("ERROR: incorrect input, please enter either wordcount or sort for --app");    
-    }
-            
-            
+                    
     int c;
 
 	FILE *fileR;
@@ -115,7 +100,7 @@ int main (int argc, char *argv[])
     //char token[1024];
     
     int bigArrSize = 4000;        
-    char **bigArr = (char**)malloc(bigArrSize*sizeof(char*));     
+    char **bigArr = (char**)malloc(bigArrSize*sizeof(char**));     
     
     char line[10000]; 
     char *sentence; 
@@ -172,9 +157,9 @@ int main (int argc, char *argv[])
                
            wordsArrayIndex++;        
            
-           if(wordsArrayIndex == bigArrSize){
+           if(wordsArrayIndex >= bigArrSize){
                 bigArrSize = bigArrSize*2;
-                bigArr = (char**)realloc(bigArr, bigArrSize*sizeof(char*));            
+                bigArr = (char**)realloc(bigArr, bigArrSize*sizeof(char**));            
            }
            
         }                        
@@ -215,19 +200,41 @@ int main (int argc, char *argv[])
         numOfWordsInLastMap = numOfWords%numOfMaps; 
     }
     
-    /*
-    printf("\nNumber of maps: %d", numOfMaps+1); 
-    printf("\nNumber of words per map: %d", numOfWordsPerMap); 
-    printf("\nNumber of words in last map: %d", numOfWordsInLastMap); 
-    */ 
+    	
+    if(strcmp(app,wordcount) ==0){
+        //printf("app is wordcount "); 
+        
+        if(strcmp(impl,procs) ==0){
+            //printf("do wordcount with processes\n");    
+            processesMap(numOfWords, numOfMaps, numOfWordsPerMap, numOfWordsInLastMap, bigArr, numReduce);      
+        }
+        
+        else if(strcmp(impl,threads) ==0){
+            //printf("do wordcount with threads\n");         
+        }   
+    }	 
     
-    processesMap(numOfWords, numOfMaps, numOfWordsPerMap, numOfWordsInLastMap, bigArr); 
+    else if(strcmp(app,sort) ==0){
+        //printf("app is sort ");
+        
+        if(strcmp(impl,procs) ==0){
+           //printf("do integer sort with processes\n");
+        }
+        
+        else if(strcmp(impl,threads) ==0){
+            //printf("do integer sort with threads\n");        
+        }    
+    }
+    
+    else{
+        printf("ERROR: incorrect input, please enter either wordcount or sort for --app");    
+    }
         
    	return 0; 
 	
 }
 
-void processesMap(int numOfWords, int numOfMaps, int numOfWordsPerMap, int numOfWordsInLastMap, char **bigArr){
+void processesMap(int numOfWords, int numOfMaps, int numOfWordsPerMap, int numOfWordsInLastMap, char **bigArr, int numOfReduce){
 
     printf("\nin Maps function\n"); 
     
@@ -319,13 +326,13 @@ void processesMap(int numOfWords, int numOfMaps, int numOfWordsPerMap, int numOf
         }
     }
     
-    processesShuffle(numOfWords);     
+    processesShuffle(numOfWords, numOfReduce);     
    
     return;    
     
 }
 
-void processesShuffle(int numOfWords){
+void processesShuffle(int numOfWords, int numOfReduce){
      
     printf("\nEntered shuffle\n");     
     
@@ -409,15 +416,15 @@ void processesShuffle(int numOfWords){
 	   exit(1);
 	}        
    
-    x=0; 
+    x=0;  
     //printf("\nPrinting out of bigArray\n"); 
-    for(x; x<indexOfArr; x++){
+    /*for(x; x<indexOfArr; x++){
         //printf("%s\n", bigArray[x]);  
         fprintf(fileW, "%s\n", bigArray[x]);   
     
-    }
+    }*/
     
-    reduce(bigArray); 
+    reduce(bigArray, numOfWords, numOfReduce); 
       
   
     /* remove the shared memory object */
@@ -425,7 +432,28 @@ void processesShuffle(int numOfWords){
 
 }
 
-void reduce(char **bigArray){
+void reduce(char **bigArray, int numOfWords, int numOfReduce){
+    
+  struct dataItem *hashArray[numOfWords];  
+  
+    int x=0;  
+    int indexOfArr = numOfWords;
+    
+    FILE *fileW = fopen("output.txt", "w");
+    if (fileW == NULL)
+    {
+	   printf("Error opening file!\n");
+	   exit(1);
+	}            
+    
+    
+    //printf("\nPrinting out of bigArray\n"); 
+    for(x; x<indexOfArr; x++){
+        //printf("%s\n", bigArray[x]);  
+        fprintf(fileW, "%s\n", bigArray[x]);   
+    
+    }
+    
 
 
 
