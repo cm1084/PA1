@@ -416,9 +416,6 @@ void processesShuffle(int numOfWords){
         fprintf(fileW, "%s\n", bigArray[x]);   
     
     }
-    
-    reduce(bigArray); 
-      
   
     /* remove the shared memory object */
     shm_unlink(name);
